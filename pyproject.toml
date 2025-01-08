@@ -7,6 +7,10 @@ readme = "README.md"
 
 [tool.poetry.dependencies]
 python = "^3.12"
+fastapi = "^0.115.6"
+pydantic-settings = "^2.7.1"
+pydantic = "^2.10.4"
+langchain = "^0.3.14"
 
 
 [build-system]
