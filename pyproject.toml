@@ -13,6 +13,7 @@ pydantic = "^2.10.4"
 langchain = "^0.3.14"
 langgraph = "^0.2.61"
 langchain-openai = "^0.2.14"
+aiohttp = "^3.11.11"
 
 
 [build-system]

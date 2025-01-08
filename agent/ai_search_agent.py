@@ -1,11 +1,10 @@
-from langchain_openai import ChatOpenAI
-from langgraph.prebuilt import create_react_agent
+from agent.base import ReActAgent
+from tools.twitter_search import TwitterSearchTool
 
 
 async def ai_search_agent(query: str):
-    model = ChatOpenAI(model="gpt-4o", temperature=0.01)
     tools = [
-
+        TwitterSearchTool()
     ]
-    graph = create_react_agent(model, tools=tools)
-    return graph.astream({"query": query})
+    agent = ReActAgent().create_agent(tools)
+    return agent.astream({"query": query})
