@@ -6,11 +6,13 @@ authors = ["pulseagentai <pulseagentai@gmail.com>"]
 readme = "README.md"
 
 [tool.poetry.dependencies]
-python = "^3.12"
+python = "^3.11"
 fastapi = "^0.115.6"
 pydantic-settings = "^2.7.1"
 pydantic = "^2.10.4"
 langchain = "^0.3.14"
+langgraph = "^0.2.61"
+langchain-openai = "^0.2.14"
 
 
 [build-system]
