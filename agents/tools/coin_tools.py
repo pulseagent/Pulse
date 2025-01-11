@@ -105,6 +105,21 @@ def query_markets_by_ids(vs_currency: str) -> dict:
         logger.error(f'Failed to query markets data: {response.status_code}')
         return {}
 
+def send_http_request(method: str, url: str, headers: dict, params: dict) -> dict:
+    try:
+        headers = headers or {}
+        headers['x-cg-pro-api-key'] = os.environ.get('COIN_API_KEY')
+
+        response = requests.request(method, url, headers=headers, params=params)
+        if response.status_code == 200:
+            data = response.json()
+            return data
+        else:
+            logger.error(f'Failed to query markets data: {response.status_code}')
+            return {"error": "request error"}
+    except Exception as e:
+        logger.error(f"Error sending HTTP request: {e}")
+    return {}
 
 if __name__ == '__main__':
     print(query_price_by_ids("bitcoin", "usd"))
