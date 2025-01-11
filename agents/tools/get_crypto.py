@@ -1,6 +1,6 @@
 from typing import List, Dict, Any, Optional
 
-from langchain.tools import BaseTool
+from langchain_core.tools import BaseTool
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 

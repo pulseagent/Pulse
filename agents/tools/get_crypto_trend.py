@@ -3,7 +3,7 @@ import datetime
 import random
 from typing import List, Dict, Any
 
-from langchain.tools import BaseTool
+from langchain_core.tools import BaseTool
 from motor.motor_asyncio import AsyncIOMotorClient
 from pydantic import BaseModel
 

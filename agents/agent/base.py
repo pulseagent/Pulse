@@ -1,8 +1,8 @@
 import logging
 
-from langchain.agents import create_react_agent
+from langchain_community.chat_models.openai import ChatOpenAI
+
 from langchain_core.runnables import Runnable
-from langchain_openai import ChatOpenAI
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +13,6 @@ class ReActAgent:
 
     def create_agent(self, tools: list) -> "ReActAgent":
         try:
-            import langgraph
-
             llm = ChatOpenAI(model="gpt-4o", temperature=0.01)
 
             self.agent = create_react_agent(llm=llm,
