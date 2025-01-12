@@ -2735,6 +2735,10 @@ class Agent:
                         )
                         response = ""
                         whole_data = ""
+                        formatter.print_panel(
+                            f"{task_prompt}",
+                            title=f"task_prompt",
+                        )
                         async for data in self.call_llm_in_stream(
                             *response_args, **kwargs
                         ):
@@ -2759,7 +2763,10 @@ class Agent:
                                 response = ""
 
                         response = whole_data
-                        logger.info("Response generated successfully. response={}", response)
+                        formatter.print_panel(
+                            f"{response}",
+                            title=f"Response generated successfully",
+                        )
 
                         # Convert to a str if the response is not a str
                         response = self.llm_output_parser(response)

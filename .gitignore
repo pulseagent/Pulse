@@ -13,3 +13,4 @@ conf/
 /logs
 .idea/
 .env
+static
