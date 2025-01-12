@@ -1,7 +1,6 @@
 import uuid
 
 import uvicorn
-from dotenv import load_dotenv
 from fastapi import FastAPI, Query
 from starlette.middleware.cors import CORSMiddleware
 from starlette.responses import StreamingResponse
@@ -9,11 +8,17 @@ from starlette.staticfiles import StaticFiles
 
 from agents.agent.ai_search_agent import ai_search_agent
 from agents.agent.coins_agent import CoinAgent
-from agents.logger import LogConfig
+
+from agents.common.log import Log
+from agents.tools.coin_tools import init_id_maps
 from lib.http_security import APIKeyMiddleware
 
 app = FastAPI()
-load_dotenv()
+
+
+@app.get("/api/health")
+async def health():
+    return {"status": "ok"}
 
 
 @app.get("/api/chat/completion")
@@ -22,15 +27,21 @@ async def completion(query: str = Query(default=""), conversationId: str = Query
     resp = agent.arun(query, conversationId)
     return StreamingResponse(content=resp, media_type="text/event-stream")
 
+
 @app.get("/api/pulse/ai/search")
 async def ai_search(query: str = Query(default="")):
     return StreamingResponse(content=ai_search_agent(query), media_type="text/event-stream")
 
+
 app.mount("/", StaticFiles(directory="static", html=True), name="static")
 
+
+def init_app():
+    init_id_maps()
+
+
 if __name__ == '__main__':
-    log_config = LogConfig()
-    log_config.setup_logging()
+    Log.init()
     app.add_middleware(APIKeyMiddleware)
     app.add_middleware(
         CORSMiddleware,
