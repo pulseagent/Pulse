@@ -22,7 +22,6 @@ from typing import (
 import toml
 import yaml
 from langchain_core.messages import BaseMessageChunk
-from loguru import logger
 from pydantic import BaseModel
 from swarm_models.tiktoken_wrapper import TikTokenizer
 from swarms.agents.ape_agent import auto_generate_prompt
@@ -55,7 +54,10 @@ from swarms.utils.wrapper_clusterop import (
 )
 
 from agents.memory.memory import MemoryObject
+from agents.protocol.inner.tool_output import ToolOutput
+from agents.tools.tool_executor import async_execute
 
+logger = logging.getLogger(__name__)
 
 # Utils
 # Custom stopping condition
@@ -245,6 +247,7 @@ class Agent:
         system_prompt: Optional[str] = AGENT_SYSTEM_PROMPT_3,
         # TODO: Change to callable, then parse the callable to a string
         tools: List[Callable] = None,
+        async_tools: Optional[List[Callable]] = None,
         dynamic_temperature_enabled: Optional[bool] = False,
         sop: Optional[str] = None,
         sop_list: Optional[List[str]] = None,
@@ -364,6 +367,7 @@ class Agent:
         self.sop = sop
         self.sop_list = sop_list
         self.tools = tools
+        self.async_tools = async_tools
         self.system_prompt = system_prompt
         self.agent_name = agent_name
         self.agent_description = agent_description
@@ -475,14 +479,15 @@ class Agent:
         )
 
         # Initialize the tool struct
+        all_tools = tools + async_tools
         if (
-            exists(tools)
+            exists(all_tools)
             or exists(list_base_models)
             or exists(tool_schema)
         ):
 
             self.tool_struct = BaseTool(
-                tools=tools,
+                tools=all_tools,
                 base_models=list_base_models,
                 tool_system_prompt=tool_system_prompt,
             )
@@ -512,7 +517,7 @@ class Agent:
                 target=self.get_docs_from_doc_folders
             ).start()
 
-        if tools is not None:
+        if all_tools is not None:
             logger.info(
                 "Tools provided make sure the functions have documentation ++ type hints, otherwise tool execution won't be reliable."
             )
@@ -523,7 +528,7 @@ class Agent:
 
             # Log the tools
             logger.info(
-                f"Tools provided: Accessing {len(tools)} tools"
+                f"Tools provided: Accessing {len(all_tools)} tools"
             )
 
             # Transform the tools into an openai schema
@@ -537,7 +542,7 @@ class Agent:
 
             # Now create a function calling map for every tools
             self.function_map = {
-                tool.__name__: tool for tool in tools
+                tool.__name__: tool for tool in all_tools
             }
 
         # If the tool schema exists or a list of base models exists then convert the tool schema into an openai schema
@@ -1222,6 +1227,37 @@ class Agent:
             self.short_memory.add(
                 role="Tool Executor",
                 content=out,
+            )
+
+        except Exception as error:
+            logger.error(f"Error executing tool: {error}")
+            raise error
+
+    async def async_parse_and_execute_tools(self, response: str, *args, **kwargs):
+        try:
+            logger.info("Executing async tool...")
+            direct_output = kwargs.get("direct_output", True)
+            # try to Execute the tool and return a string
+            whole_output = ""
+            async for data in async_execute(
+                functions=self.async_tools,
+                json_string=response,
+                parse_md=True,
+                *args,
+                **kwargs,
+            ):
+                if direct_output:
+                    yield data
+                else:
+                    whole_output += str(data)
+
+            if direct_output:
+                return
+
+            # Add the output to the memory
+            self.short_memory.add(
+                role="Tool Executor",
+                content=whole_output,
             )
 
         except Exception as error:
@@ -2454,7 +2490,6 @@ class Agent:
                 elif isinstance(out, BaseMessageChunk):
                     yield out.content
         except AttributeError as e:
-            e.with_traceback()
             logger.error(
                 f"Error calling LLM: {e} You need a class with a run(task: str) method"
             )
@@ -2735,9 +2770,8 @@ class Agent:
                         )
                         response = ""
                         whole_data = ""
-                        formatter.print_panel(
-                            f"{task_prompt}",
-                            title=f"task_prompt",
+                        logger.info(
+                            f"Generating response with LLM... :{response_args}"
                         )
                         async for data in self.call_llm_in_stream(
                             *response_args, **kwargs
@@ -2763,10 +2797,7 @@ class Agent:
                                 response = ""
 
                         response = whole_data
-                        formatter.print_panel(
-                            f"{response}",
-                            title=f"Response generated successfully",
-                        )
+                        logger.info(f"Response generated successfully. {response}")
 
                         # Convert to a str if the response is not a str
                         response = self.llm_output_parser(response)
@@ -2802,8 +2833,19 @@ class Agent:
                             )
 
                         # Check and execute tools
-                        if self.tools is not None:
-                            self.parse_and_execute_tools(response)
+                        if not should_stop:
+                            is_finished = False
+                            if self.async_tools is not None:
+                                async for resp in self.async_parse_and_execute_tools(response, direct_output=True):
+                                    yield ToolOutput(resp)
+                                    is_finished = True
+                                if is_finished:
+                                    should_stop = True
+                                    success = True
+                                    break
+
+                            if self.tools is not None:
+                                self.parse_and_execute_tools(response)
 
                         # Add the response to the memory
                         self.short_memory.add(
@@ -2837,6 +2879,7 @@ class Agent:
                         success = True  # Mark as successful to exit the retry loop
 
                     except Exception as e:
+                        formatter.print_panel(str(e), title="Exception occurred!")
 
                         self.log_agent_data()
 
@@ -2995,7 +3038,7 @@ class Agent:
         except KeyboardInterrupt as error:
             self._handle_run_error(error)
 
-    def add_memory(self, memory: MemoryObject):
+    def add_memory_object(self, memory: MemoryObject):
         """Add a memory object to the agent's memory."""
         self.short_memory.add(
             role="History data",
