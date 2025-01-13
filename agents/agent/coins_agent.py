@@ -3,8 +3,6 @@ import logging
 import sys
 from typing import AsyncIterator
 
-from rich.traceback import install
-
 from agents.agent.abstract_agent import AbstractAgent
 from agents.memory.local_memory import local_memory
 from agents.memory.memory import MemoryObject

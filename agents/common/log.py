@@ -1,22 +1,44 @@
 import logging
+import sys
+
+from agents.common.config import SETTINGS
+from agents.common.otel import OtelLogging
 
 
-class Log(object):
-    """"""
-    _executed = False
+class Log:
+    """Utility class for unified logging configuration and output"""
 
     @staticmethod
     def init():
-        """"""
-        if Log._executed:
-            return
+        """Initialize logging configuration"""
+        # Define unified log format with timestamp, level, filename, class name, function and line number
+        if SETTINGS.OTEL_ENABLED:
+            OtelLogging.init()
+            log_format = f"%(asctime)s [%(levelname)s] [tid=%(otelTraceID)s sid=%(otelSpanID)s] %(filename)s:%(funcName)s:%(lineno)s - %(message)s"
+        else:
+            log_format = (
+                "%(asctime)s [%(levelname)s] "
+                "%(filename)s:%(name)s.%(funcName)s:%(lineno)d - "
+                "%(message)s"
+            )
 
-        fmt = f"%(asctime)s [%(levelname)s] %(filename)s:%(funcName)s:%(lineno)s - %(message)s"
+        # Configure date format
+        date_format = "%Y-%m-%d %H:%M:%S"
 
+        # Create formatter
         formatter = logging.Formatter(
-            fmt=fmt,
-            datefmt="%Y-%m-%d %H:%M:%S",
+            fmt=log_format,
+            datefmt=date_format,
         )
 
-        logging.basicConfig(level=logging.INFO)
-        logging.getLogger().handlers[0].setFormatter(formatter)
+        # Clear existing handlers
+        logging.root.handlers = []
+
+        # Create console handler
+        console_handler = logging.StreamHandler(sys.stdout)
+        console_handler.setLevel(logging.INFO)
+        console_handler.setFormatter(formatter)
+
+        # Configure root logger
+        logging.root.setLevel(logging.INFO)
+        logging.root.addHandler(console_handler)

@@ -1,7 +1,6 @@
 import logging
 
 from langchain_community.chat_models.openai import ChatOpenAI
-
 from langchain_core.runnables import Runnable
 
 logger = logging.getLogger(__name__)
