@@ -13,7 +13,7 @@ This is an intelligent system based on AI Agent architecture, consisting of seve
 ### Clone the repository
 ``` git clone https://github.com/pulseagent/Pulse.git ```
 ### Install dependencies
-``` pip install -r requirements.txt ```
+``` poetry install ```
 
 ## Future Roadmap
 We have exciting plans for the future development of Pulse AI System:
