@@ -36,9 +36,9 @@ class Log:
 
         # Create console handler
         console_handler = logging.StreamHandler(sys.stdout)
-        console_handler.setLevel(logging.INFO)
+        console_handler.setLevel(SETTINGS.LOG_LEVEL)
         console_handler.setFormatter(formatter)
 
         # Configure root logger
-        logging.root.setLevel(logging.INFO)
+        logging.root.setLevel(SETTINGS.LOG_LEVEL)
         logging.root.addHandler(console_handler)
