@@ -3,7 +3,7 @@ from pydantic.v1 import BaseSettings
 
 class Settings(BaseSettings):
     class Config:
-        env_file = ['.env', '../.env', '../../.env', '../../../.env', '../prism/.env']
+        env_file = ['.env', '../.env', '../../.env', '../../../.env']
         env_file_encoding = 'utf-8'
         extra = 'ignore'
 
@@ -27,5 +27,6 @@ class Settings(BaseSettings):
     REDIS_PORT: int = 6379
     REDIS_PASSWORD: str = None
     REDIS_DB: int = 0
+    LOG_LEVEL: str = "INFO"
 
 SETTINGS = Settings()
