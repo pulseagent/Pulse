@@ -1,12 +1,12 @@
-import os
-
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 from starlette.status import HTTP_403_FORBIDDEN
 
+from agents.common.config import SETTINGS
+
 API_KEY_NAME = "X-API-Key"
-API_KEY = os.getenv("API_KEY")
+API_KEY = SETTINGS.API_KEY
 
 class APIKeyMiddleware(BaseHTTPMiddleware):
 
