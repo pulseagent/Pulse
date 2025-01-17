@@ -1,13 +1,13 @@
 import logging
-import os
 
 import requests
 
+from agents.common.config import SETTINGS
 from agents.utils.token_limiter import TokenLimiter
 
 logger = logging.getLogger(__name__)
 
-host = os.environ.get('COIN_HOST')
+host = SETTINGS.COIN_HOST
 
 id_maps = {}
 platform_maps = {}
@@ -194,7 +194,7 @@ def platform_to_id(platform: str, default: str=None) -> str:
 def send_http_request(method: str, url: str, headers: dict, params: dict, limit_tokens=True) -> dict:
     try:
         headers = headers or {}
-        headers['x-cg-pro-api-key'] = os.environ.get('COIN_API_KEY')
+        headers['x-cg-pro-api-key'] = SETTINGS.COIN_API_KEY
 
         response = requests.request(method, url, headers=headers, params=params)
         if response.status_code == 200:
@@ -209,6 +209,27 @@ def send_http_request(method: str, url: str, headers: dict, params: dict, limit_
     except Exception as e:
         logger.error(f"Error sending HTTP request: {e}")
     return {}
+
+def query_listings_historical(date: str):
+    """
+    Returns a ranked and sorted list of all cryptocurrencies for a historical UTC date.
+
+    Args:
+        date (str): date (Unix or ISO 8601) to reference day of snapshot. It is recommended to send an ISO date format like "2019-10-10" without time.
+
+    Returns:
+        dict: A dictionary containing the listing information.
+    """
+
+    url = SETTINGS.COIN_HOST_V2 + '/v1/cryptocurrency/listings/historical'
+    params = {
+        'date': date,
+    }
+    headers = {
+        'accept': 'application/json',
+        'X-CMC_PRO_API_KEY': SETTINGS.COIN_API_KEY_V2
+    }
+    return send_http_request('get', url, headers, params)
 
 if __name__ == '__main__':
     # init_id_maps()
