@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Optional, AsyncIterator, List, Callable
+from typing import Optional, AsyncIterator, List, Callable, Any
 
 import yaml
 from langchain_core.messages import BaseMessageChunk
@@ -9,6 +9,7 @@ from swarms.structs.agent import exists
 from swarms.structs.concat import concat_strings
 
 from agents.memory.memory import MemoryObject
+from agents.protocol.inner.node_data import NodeMessage
 from agents.protocol.inner.tool_output import ToolOutput
 from agents.tools.tool_executor import async_execute
 
@@ -20,6 +21,7 @@ class AsyncAgent(Agent):
             self,
             tools: Optional[List[Callable]] = None,
             async_tools: Optional[List[Callable]] = None,
+            should_send_node: Optional[bool] = False,
             *args,
             **kwargs,
     ):
@@ -29,6 +31,7 @@ class AsyncAgent(Agent):
         Args:
             tools: List of synchronous tool functions
             async_tools: List of asynchronous tool functions
+            should_send_node: Whether to send node information to the agent. Defaults to True.
             *args: Additional positional arguments for parent class
             **kwargs: Additional keyword arguments for parent class
         """
@@ -37,6 +40,7 @@ class AsyncAgent(Agent):
         self.tools = tools or []
         self.async_tools = async_tools or []
         self._initialize_tools()
+        self.should_send_node = should_send_node
 
     def _initialize_tools(self) -> None:
         """Initialize tool structure and function mappings."""
@@ -91,6 +95,8 @@ class AsyncAgent(Agent):
             agent(task="What is the capital of France?", img="path/to/image.jpg", is_last=True)
         """
         try:
+            async for data in self.send_node_message("task understanding"): yield data
+
             self.check_if_no_prompt_then_autogenerate(task)
 
             self.agent_output.task = task
@@ -100,6 +106,7 @@ class AsyncAgent(Agent):
 
             # Plan
             if self.plan_enabled is True:
+                async for data in self.send_node_message("task plan"): yield data
                 self.plan(task)
 
             # Set the loop count
@@ -110,6 +117,7 @@ class AsyncAgent(Agent):
 
             # Query the long term memory first for the context
             if self.long_term_memory is not None:
+                async for data in self.send_node_message("load past context"): yield data
                 self.memory_query(task)
 
             # Print the user's request
@@ -172,6 +180,10 @@ class AsyncAgent(Agent):
                                 raise ValueError(
                                     f"Unexpected response format: {type(data)}"
                                 )
+
+                            if (self.stopping_condition is not None
+                                    and self._check_stopping_condition(response)):
+                                async for data in self.send_node_message("generate response"): yield data
 
                             if should_stop or (
                                     self.stopping_condition is not None
@@ -466,6 +478,11 @@ class AsyncAgent(Agent):
         except Exception as error:
             logger.error(f"Error executing tool: {error}")
             raise error
+
+    async def send_node_message(self, message: str) -> AsyncIterator[NodeMessage]:
+        """Send a node message to the agent."""
+        if self.should_send_node:
+            yield NodeMessage(message=message)
 
     def add_memory_object(self, memory: MemoryObject):
         """Add a memory object to the agent's memory."""
