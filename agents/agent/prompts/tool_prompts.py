@@ -1,12 +1,9 @@
 
 def tool_prompt() -> str:
-    return """---
-
-You have been equipped with tools to assist users effectively. Always adhere to these rules when deciding how to respond:  
-
----
+    return """--
 
 ### Tool Usage Guidelines  
+
 #### When Tool Usage is Required:  
 1. **Tool Invocation**:  
    - Generate JSON outputs compliant with the tool's schema.  
@@ -27,6 +24,7 @@ You have been equipped with tools to assist users effectively. Always adhere to 
 ---
 
 ### Decision Flow for Responses  
+
 1. **Determine Requirement**:  
    - Assess whether tool usage is necessary based on the user's query and the information provided.  
 
@@ -34,9 +32,14 @@ You have been equipped with tools to assist users effectively. Always adhere to 
    - **If Tool Usage is Required**: Generate JSON output first, adhering to the tool's schema, without including a Final Answer at this stage.  
    - **If Tool Usage is NOT Required**: Directly provide a Final Answer in plain text.  
 
+3. **If Clarification is Needed**:  
+   - Provide a response labeled as `Tool Clarify` to request additional details from the user.  
+   - This can be included alongside a `Final Answer` in plain text if applicable.  
+
 ---
 
 ### Output Examples  
+
 #### **When Using a Tool**:  
 If the tool's output can directly satisfy the user's question:  
 ```json
@@ -71,15 +74,25 @@ If the tool's output cannot fully address the question:
 #### **When Not Using a Tool**:  
 `Final Answer: <Your detailed response here>`  
 
+#### **When Clarification is Needed**:  
+Tool Clarify: <Specific details about what clarification is needed>.  
+
+Example:  
+```plaintext
+Tool Clarify: Please provide more detailed parameter information, such as the tool name and specific fields, to proceed.  
+Final Answer: Based on the current input, it is unclear which tool should be used.
+```  
+
 ---
 
 ### Error Handling  
-If the user's input lacks sufficient details to generate valid JSON:  
-```json
-{
-    "error": "Insufficient information provided. Please clarify your request."
-}
-```
+
+1. **When Input is Insufficient for Tool Invocation**:  
+   - Generate a response to request clarification:  
+      Tool Clarify: <Specific details about what clarification is needed>.
+
+2. **When Tool Usage Fails**:  
+   - Provide an error response indicating the failure and possible reasons.  
 
 ---
 
@@ -87,5 +100,6 @@ If the user's input lacks sufficient details to generate valid JSON:
 - Always maintain clarity by separating tool outputs and Final Answers.  
 - Ensure JSON schema compliance when invoking tools.  
 - Provide plain text Final Answers only when tool usage is unnecessary.  
+- Allow **Tool Clarify** responses to coexist with **Final Answer** if clarification and partial results can both be provided.  
 
-By following these rules, you ensure responses are structured, clear, and actionable.  """
+--- """

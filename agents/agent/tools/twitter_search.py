@@ -5,7 +5,7 @@ import aiohttp
 from langchain_core.documents import Document
 from langchain_core.tools import BaseTool
 
-from config import SETTINGS
+from agents.common.config import SETTINGS
 
 logger = logging.getLogger(__name__)
 

@@ -3,14 +3,15 @@ import logging
 from datetime import datetime, timezone
 from typing import AsyncIterator
 
-from agents.agent.abstract_agent import AbstractAgent
-from agents.memory.memory import MemoryObject
-from agents.memory.redis_memory import RedisMemory
-from agents.models.openai import openai
-from agents.prompts.tool_prompts import tool_prompt
-from agents.protocol.inner.tool_output import ToolOutput
-from agents.swarms.async_agent import AsyncAgent
-from agents.tools import coin_tools, ai_search_tool
+from agents.agent.core.abstract_agent import AbstractAgent
+from agents.agent.entity.inner.node_data import NodeMessage
+from agents.agent.entity.inner.tool_output import ToolOutput
+from agents.agent.llm.openai import openai
+from agents.agent.memory.memory import MemoryObject
+from agents.agent.memory.redis_memory import RedisMemory
+from agents.agent.prompts.tool_prompts import tool_prompt
+from agents.agent.swarms.async_agent import AsyncAgent
+from agents.agent.tools import coin_tools, ai_search_tool
 
 logger = logging.getLogger(__name__)
 
@@ -45,40 +46,66 @@ class CoinAgent(AbstractAgent):
             ],
             max_loops=6,
             output_type="list",
+            should_send_node=True,
             stopping_condition=stopping_condition,
             system_prompt="You are an Pulse Agent.Your can provide you with cryptocurrency information and transaction data, as well as assist in generating professional research reports on the crypto market. You can solve problems directly or utilize specialized tools to perform detailed tasks and deliver precise solutions.",
         )
 
     async def arun(self, query: str, conversation_id: str) -> AsyncIterator[str]:
+        """
+        Executes a query using the agent and yields responses asynchronously.
+
+        :param query: The input query string.
+        :param conversation_id: The conversation ID used to fetch and save memory.
+        :return: An asynchronous iterator of response strings.
+        """
         memory_list = self.redis_memory.get_memory_by_conversation_id(conversation_id)
-        response = ""
+        response_buffer = ""
         try:
-            self.agent.short_memory.add(role="System Time", content=f"UTC Now: {datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S %Z')}")
+            # Add system time to short-term memory
+            current_time = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S %Z')
+            self.agent.short_memory.add(role="System Time", content=f"UTC Now: {current_time}")
+
+            # Load conversation-specific memory into the agent
             for memory in memory_list:
                 self.agent.add_memory_object(memory)
 
+            # Process the query and yield responses
             is_finalized = False
-            async for data in self.agent.acompletion(query):
-                if isinstance(data, ToolOutput):
-                    yield data.get_output()
-                    response = "..."
+            async for output in self.agent.acompletion(query):
+                if isinstance(output, NodeMessage):
+                    yield self.seed_node_message(output)
+                elif isinstance(output, ToolOutput):
+                    yield output.get_output()
+                    response_buffer = "..."
                     is_finalized = True
                     continue
-                if not isinstance(data, str):
+
+                if not isinstance(output, str):
                     continue
+
                 for stop_word in self.stop_condition:
-                    if data and stop_word in data:
-                        data = data.replace(stop_word, "")
-                response += data
+                    if output and stop_word in output:
+                        output = output.replace(stop_word, "")
+
+                response_buffer += output
                 is_finalized = True
-                if data:
-                    yield self.send_message(data)
+                if output:
+                    yield self.send_message(output)
+
+            # Handle the case where no final response was generated
             if not is_finalized:
                 yield self.send_message(self.default_final_answer)
-        except Exception as e:
-            logger.error("Error running the agent: {}", e, exc_info=True)
+
+        except Exception as error:
+            logger.error("Error executing agent run: %s", error, exc_info=True)
         finally:
-            self.redis_memory.save_memory(conversation_id, MemoryObject(input=query, output=response))
+            # Save conversation memory
+            memory_object = MemoryObject(input=query, output=response_buffer)
+            self.redis_memory.save_memory(conversation_id, memory_object)
 
     def send_message(self, message: str) -> str:
         return f'event: message\ndata: {json.dumps({"text": message}, ensure_ascii=False)}\n\n'
+
+    def seed_node_message(self, node_message: NodeMessage):
+        return f'event: status\ndata: {json.dumps(node_message.to_dict(), ensure_ascii=False)}\n\n'

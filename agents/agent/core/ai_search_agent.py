@@ -1,10 +1,10 @@
 from typing import AsyncIterator
 
-from agents.agent.base import ReActAgent
-from agents.tools.get_crypto import GetCryptoDataTool
-from agents.tools.get_crypto_trend import GetCryptoTrendTool
-from agents.tools.score_calculator import ScoreCalculatorTool
-from agents.tools.twitter_search import TwitterSearchTool
+from agents.agent.core.base import ReActAgent
+from agents.agent.tools.get_crypto import GetCryptoDataTool
+from agents.agent.tools.get_crypto_trend import GetCryptoTrendTool
+from agents.agent.tools.score_calculator import ScoreCalculatorTool
+from agents.agent.tools.twitter_search import TwitterSearchTool
 
 
 async def ai_search_agent(query: str) -> AsyncIterator:

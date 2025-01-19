@@ -1,13 +1,12 @@
-import os
-
 from langchain_community.chat_models.openai import ChatOpenAI
 
-from agents.models.model import Model
+from agents.agent.llm.model import Model
+from agents.common.config import SETTINGS
 
 
 class ChatGPT(Model):
     """Chat GPT model"""
-    use_model = ChatOpenAI(openai_api_key=os.getenv("OPENAI_API_KEY"), model_name="gpt-4",)
+    use_model = ChatOpenAI(openai_api_key=SETTINGS.OPENAI_API_KEY, model_name=SETTINGS.MODEL_NAME,)
 
 
     def __init__(self, *args, **kwargs):

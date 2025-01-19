@@ -20,6 +20,20 @@ class MemoryObject:
         else:
             return json.dumps(self.output, ensure_ascii=False)
 
+
+    def to_dict(self) -> dict:
+        return {
+            "input": self.get_input(),
+            "output": self.get_output_to_string()
+        }
+
+    @staticmethod
+    def from_dict(data: dict):
+        self = MemoryObject()
+        self.input = data.get("input", "")
+        self.output = data.get("output", "")
+        return self
+
 class MemoryManager(ABC):
     memory_size: int = 10
 

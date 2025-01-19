@@ -191,10 +191,16 @@ def platform_to_id(platform: str, default: str=None) -> str:
             return k
     return default
 
-def send_http_request(method: str, url: str, headers: dict, params: dict, limit_tokens=True) -> dict:
+def send_http_request(method: str,
+                      url: str,
+                      headers: dict,
+                      params: dict,
+                      limit_tokens=True,
+                      api_key=SETTINGS.COIN_API_KEY) -> dict:
     try:
         headers = headers or {}
-        headers['x-cg-pro-api-key'] = SETTINGS.COIN_API_KEY
+        if api_key:
+            headers['x-cg-pro-api-key'] = api_key
 
         response = requests.request(method, url, headers=headers, params=params)
         if response.status_code == 200:
@@ -204,7 +210,7 @@ def send_http_request(method: str, url: str, headers: dict, params: dict, limit_
                 return tokenizer.limit_tokens(data)
             return data
         else:
-            logger.error(f'Failed to query markets data: {response.status_code}')
+            logger.error(f'Failed to query markets data: {response.status_code} {response.text}')
             return {"error": "request error"}
     except Exception as e:
         logger.error(f"Error sending HTTP request: {e}")
@@ -229,7 +235,23 @@ def query_listings_historical(date: str):
         'accept': 'application/json',
         'X-CMC_PRO_API_KEY': SETTINGS.COIN_API_KEY_V2
     }
-    return send_http_request('get', url, headers, params)
+    return send_http_request('get', url, headers, params, api_key=None)
+
+def query_OHLCV_historical(symbol: str):
+
+    url = SETTINGS.COIN_HOST_V2 + '/v2/cryptocurrency/ohlcv/historical'
+    params = {
+        'symbol': symbol,
+        'time_start': '2024-09-19',
+        'time_end': '2024-12-19',
+    }
+    headers = {
+        'accept': 'application/json',
+        'X-CMC_PRO_API_KEY': SETTINGS.COIN_API_KEY_V2
+    }
+    return send_http_request('get', url, headers, params, api_key=None)
+
+
 
 if __name__ == '__main__':
     # init_id_maps()
@@ -237,5 +259,7 @@ if __name__ == '__main__':
     # print(query_historical_data_by_ids("bitcoin", "usd", 7))
     # print(query_markets_by_currency("usd", "bitcoin", "24h"))
     # print(query_token_price_by_id("ethereum", "0x2260fac5e5542a773aa44fbcfedf7c193bc2c599", "usd"))
-    print(query_top_gainers_losers("usd"))
+    # print(query_top_gainers_losers("usd"))
+    print(query_listings_historical("2024-01-05"))
+    print(query_OHLCV_historical("BTC,ETH"))
     pass

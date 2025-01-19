@@ -1,5 +1,5 @@
+from agents.agent.memory.memory import MemoryManager, MemoryObject
 from agents.common.redis_utils import redis_utils
-from agents.memory.memory import MemoryManager, MemoryObject
 
 
 class RedisMemory(MemoryManager):

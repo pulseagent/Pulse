@@ -1,3 +1,6 @@
+from typing import Optional
+
+from pydantic import Field
 from pydantic.v1 import BaseSettings
 
 
@@ -11,6 +14,9 @@ class Settings(BaseSettings):
     OTEL_ENABLED: bool = True
     OTEL_TRACE_UPLOAD_ENABLED: bool = False
     OTEL_TRACE_UPLOAD_URL: str = "http://127.0.0.1:4318/v1/traces"
+
+    API_KEYS: Optional[list[str]] = []
+    TWITTER_TOKEN: Optional[str] = ""
 
     HOST: str = "0.0.0.0"
     PORT: int = 8080
@@ -28,5 +34,10 @@ class Settings(BaseSettings):
     REDIS_PASSWORD: str = None
     REDIS_DB: int = 0
     LOG_LEVEL: str = "INFO"
+    MYSQL_USER: str = "root"
+    MYSQL_PASSWORD: str = "password"
+    MYSQL_HOST: str = "localhost"
+    MYSQL_PORT: int = 3306
+    MYSQL_DB: str = "mydatabase"
 
 SETTINGS = Settings()
