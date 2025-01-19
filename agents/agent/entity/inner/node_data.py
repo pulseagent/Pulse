@@ -15,5 +15,5 @@ class NodeMessage:
         data = {}
         for key, value in self.__dict__.items():
             if value:
-                data[key] = data
+                data[key] = value
         return data

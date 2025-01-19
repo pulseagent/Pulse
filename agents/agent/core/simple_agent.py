@@ -1,9 +1,9 @@
 from swarms import Agent
 
-from agents.agent.abstract_agent import AbstractAgent
-from agents.models.openai import openai
-from agents.prompts.tool_prompts import tool_prompt
-from agents.tools import demo_tool
+from agents.agent.core.abstract_agent import AbstractAgent
+from agents.agent.llm.openai import openai
+from agents.agent.prompts.tool_prompts import tool_prompt
+from agents.agent.tools import demo_tool
 
 
 class SimpleAgent(AbstractAgent):
@@ -20,6 +20,6 @@ class SimpleAgent(AbstractAgent):
             system_prompt="You are an agent that can execute terminal commands. Use the tools provided to assist the user.",
         )
 
-    async def arun(self, query: str) -> str:
+    async def arun(self, query: str, conversation_id: str) -> str:
         results = await self.agent.arun(query)
         return results[-1]

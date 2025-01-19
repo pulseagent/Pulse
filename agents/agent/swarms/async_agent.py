@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import Optional, AsyncIterator, List, Callable, Any
+from typing import Optional, AsyncIterator, List, Callable
 
 import yaml
 from langchain_core.messages import BaseMessageChunk
@@ -8,10 +8,10 @@ from swarms import Agent, BaseTool
 from swarms.structs.agent import exists
 from swarms.structs.concat import concat_strings
 
-from agents.memory.memory import MemoryObject
-from agents.protocol.inner.node_data import NodeMessage
-from agents.protocol.inner.tool_output import ToolOutput
-from agents.tools.tool_executor import async_execute
+from agents.agent.entity.inner.node_data import NodeMessage
+from agents.agent.entity.inner.tool_output import ToolOutput
+from agents.agent.memory.memory import MemoryObject
+from agents.agent.tools.tool_executor import async_execute
 
 logger = logging.getLogger(__name__)
 

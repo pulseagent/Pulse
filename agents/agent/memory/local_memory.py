@@ -1,4 +1,4 @@
-from agents.memory.memory import MemoryManager, MemoryObject
+from agents.agent.memory.memory import MemoryManager, MemoryObject
 
 
 class LocalMemory(MemoryManager):
