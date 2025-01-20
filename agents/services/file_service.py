@@ -1,16 +1,79 @@
-from fastapi import UploadFile, Depends
+import uuid
+from abc import ABC, abstractmethod
+from typing import TypedDict, Union
+
+from fastapi import Depends
+# import boto3
+from fastapi import UploadFile
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.models.db import get_db
-from agents.utils.storage import DatabaseStorage
+from agents.models.models import FileStorage
 
-async def upload_file(file: UploadFile, file_location: str, session: AsyncSession = Depends(get_db)):
-    storage = DatabaseStorage(session)
-    return storage.upload_file(file, file_location)
 
-async def query_file(file_name: str, session: AsyncSession = Depends(get_db)):
-    storage = DatabaseStorage(session)
-    file_record = session.query(storage).filter_by(file_name=file_name).first()
-    if file_record:
-        return {"file_name": file_record.file_name, "file_content": file_record.file_content}
-    return {"error": "File not found"}
+async def upload_file(file: UploadFile, session: AsyncSession = Depends(get_db)):
+    storage = Storage.get_storage(session)
+    fid = await storage.upload_file(file, file.filename)
+    return {"fid": fid, "url": f"/files/{fid}"}
+
+async def query_file(file_uuid: str, session: AsyncSession = Depends(get_db)):
+    storage = Storage.get_storage(session)
+    file_record: FileInfo = await storage.get_file(file_uuid)
+    return file_record
+
+
+class FileInfo(TypedDict):
+    file_name: str
+    file_data: bytes
+    file_id: str
+    file_size: int
+
+
+class Storage(ABC):
+    @abstractmethod
+    def upload_file(self, file: UploadFile, file_name: str) -> str:
+        pass
+
+    @abstractmethod
+    def delete_file(self, file_name: str) -> dict:
+        pass
+
+    @abstractmethod
+    def get_file(self, file_name: str) -> Union[FileInfo, None]:
+        pass
+
+    @staticmethod
+    def get_storage(session: AsyncSession):
+        storage = DatabaseStorage(session)
+        return storage
+
+
+class DatabaseStorage(Storage):
+    def __init__(self, session: AsyncSession):
+        self.db_session = session
+
+    async def upload_file(self, file: UploadFile, file_name: str) -> str:
+        file_uuid = str(uuid.uuid4())
+        file_content = file.file.read()
+        new_file = FileStorage(file_uuid=file_uuid, file_name=file_name, file_content=file_content, size=file.size)
+        self.db_session.add(new_file)
+        await self.db_session.commit()
+        return file_uuid
+
+    async def delete_file(self, file_location: str) -> dict:
+        pass
+
+    async def get_file(self, fid: str) -> Union[FileInfo, None]:
+
+        result = await self.db_session.execute(select(FileStorage).where(FileStorage.file_uuid == fid))
+        first = result.scalars().first()
+        if first:
+            return FileInfo(
+                file_name=first.file_name,
+                file_data=first.file_content,
+                file_id=first.file_uuid,
+                file_size=first.size,
+            )
+        return None
+
