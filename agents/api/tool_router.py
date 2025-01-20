@@ -8,7 +8,7 @@ from agents.services import tool_service
 
 router = APIRouter()
 
-@router.post("/tools/")
+@router.post("/tools/create")
 async def create_tool(tool: ToolCreate, session: AsyncSession = Depends(get_db)):
     """
     Create a new tool and associate it with an agent.
@@ -17,8 +17,8 @@ async def create_tool(tool: ToolCreate, session: AsyncSession = Depends(get_db))
     - **type**: Type of the tool
     - **content**: Content of the tool
     """
-    tool_id = await tool_service.create_tool(tool.app_id, tool.type, tool.content, session)
-    return RestResponse(data={"id": tool_id})
+    tool = await tool_service.create_tool(tool.app_id, tool.name, tool.type, tool.content, session)
+    return RestResponse(data=tool)
 
 @router.put("/tools/{tool_id}")
 async def update_tool(tool_id: int, tool: ToolUpdate, session: AsyncSession = Depends(get_db)):
@@ -29,8 +29,8 @@ async def update_tool(tool_id: int, tool: ToolUpdate, session: AsyncSession = De
     - **type**: New type of the tool
     - **content**: New content of the tool
     """
-    await tool_service.update_tool(tool_id, tool.type, tool.content, session)
-    return RestResponse(data="ok")
+    tool = await tool_service.update_tool(tool_id, tool.name, tool.type, tool.content, session)
+    return RestResponse(data=tool)
 
 @router.delete("/tools/{tool_id}")
 async def delete_tool(tool_id: int, session: AsyncSession = Depends(get_db)):
@@ -41,3 +41,12 @@ async def delete_tool(tool_id: int, session: AsyncSession = Depends(get_db)):
     """
     await tool_service.delete_tool(tool_id, session)
     return RestResponse(data="ok")
+
+@router.get("/tools/{tool_id}")
+async def get_tool(tool_id: int, session: AsyncSession = Depends(get_db)):
+    """
+    Retrieve a tool's information by its ID.
+    
+    - **tool_id**: ID of the tool to retrieve
+    """
+    return RestResponse(data=await tool_service.get_tool(tool_id, session))

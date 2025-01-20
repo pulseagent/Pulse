@@ -40,4 +40,6 @@ class Settings(BaseSettings):
     MYSQL_PORT: int = 3306
     MYSQL_DB: str = "mydatabase"
 
+    OPENAPI_FITTER_FIELDS: list[str] = []
+
 SETTINGS = Settings()
