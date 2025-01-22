@@ -23,7 +23,7 @@ async def async_execute(
         dict: A dictionary containing the results from each function execution.
     """
     if not functions or not json_string:
-        raise ValueError("Functions and JSON string are required")
+        return
 
     if parse_md:
         json_string = extract_code_from_markdown(json_string)

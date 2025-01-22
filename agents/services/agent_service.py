@@ -1,17 +1,29 @@
-from typing import List, Optional
+from typing import List, Optional, AsyncIterator
 
 from fastapi import Depends
 from sqlalchemy import update
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from agents.agent.core.chat_agent import ChatAgent
 from agents.exceptions import CustomAgentException
 from agents.models.db import get_db
 from agents.models.models import App, Tool
 from agents.protocol.response import AppModel
-from agents.protocol.schemas import ToolInfo, AgentStatus
+from agents.protocol.schemas import ToolInfo, AgentStatus, DialogueRequest
 from agents.services import tool_service
-from agents.services.tool_service import create_tool, update_tool  # Ensure import of update_tool method
+from agents.services.tool_service import create_tool, update_tool
+
+
+async def dialogue(agent_id: int, request: DialogueRequest, session: AsyncSession = Depends(get_db)) \
+        -> AsyncIterator[str]:
+    result = await session.execute(select(App).where(App.id == agent_id))
+    agent = result.scalar_one_or_none()
+    agent = ChatAgent(agent)
+    async for response in agent.arun(request.query, request.conversation_id):
+        yield response
+
+
 
 
 async def get_agent(id: int, session: AsyncSession):

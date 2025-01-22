@@ -1,6 +1,8 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import Optional
+from typing import Optional, AsyncIterator
+
+from starlette.responses import StreamingResponse
 
 from agents.common.response import RestResponse
 from agents.models.db import get_db
@@ -88,7 +90,8 @@ async def delete_agent(agent_id: int, session: AsyncSession = Depends(get_db)):
     return RestResponse(data="ok")
 
 @router.post("/agents/{agent_id}/dialogue", response_model=DialogueResponse)
-async def dialogue(agent_id: int, request: DialogueRequest):
+async def dialogue(agent_id: int, request: DialogueRequest,
+             session: AsyncSession = Depends(get_db)):
     """
     Handle a dialogue between a user and an agent.
     
@@ -97,5 +100,5 @@ async def dialogue(agent_id: int, request: DialogueRequest):
     - **message**: Message from the user
     """
     # Placeholder logic for generating a response
-    response_text = f"Agent {agent_id} received your message: {request.message}"
-    return DialogueResponse(response=response_text)
+    resp = agent_service.dialogue(agent_id, request, session)
+    return StreamingResponse(content=resp, media_type="text/event-stream")
