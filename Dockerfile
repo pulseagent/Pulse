@@ -12,11 +12,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
     gfortran \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
 
-COPY requirements.txt /requirements.txt
+RUN mkdir -p /app
+WORKDIR /app
 
-RUN pip install --no-cache-dir -r /requirements.txt
+RUN pip install --no-cache-dir poetry
+
+COPY pyproject.toml poetry.lock ./
+
+RUN poetry install --no-cache --no-root
 
 FROM python:3.11-slim-bullseye
 
@@ -26,10 +31,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PATH="/app:${PATH}" \
     PYTHONPATH="/app:${PYTHONPATH}"
 
-RUN mkdir -p /app
-WORKDIR /app
-
 COPY --from=builder /usr/local/lib/python3.11/site-packages /usr/local/lib/python3.11/site-packages
 COPY --from=builder /usr/local/bin /usr/local/bin
 
-CMD ["python", "api.py"]
+CMD ["poetry", "run", "python", "api.py"]

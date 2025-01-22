@@ -1,3 +1,4 @@
+import uuid
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from enum import Enum
@@ -51,9 +52,8 @@ class ToolUpdate(BaseModel):
     content: Optional[str] = Field(None, description="Optional new content for the tool")
 
 class DialogueRequest(BaseModel):
-    user_id: str = Field(..., description="ID of the user initiating the dialogue")
-    agent_id: int = Field(..., description="ID of the agent involved in the dialogue")
-    message: str = Field(..., description="Message content from the user")
+    query: Optional[str] = None
+    conversation_id: Optional[str] = Field(default_factory=lambda: str(uuid.uuid4()), alias="conversationId")
 
 class DialogueResponse(BaseModel):
     response: str = Field(..., description="Response message from the agent")

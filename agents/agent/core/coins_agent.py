@@ -18,8 +18,6 @@ logger = logging.getLogger(__name__)
 
 class CoinAgent(AbstractAgent):
 
-    stop_condition = ["Final Answer:", "Tool Clarify: "]
-    default_final_answer = "Sorry, I can't help with that. Try rephrasing or asking a related question for better results!"
     redis_memory: RedisMemory = RedisMemory()
     need_now_time: bool = True
 

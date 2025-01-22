@@ -227,9 +227,13 @@ class AsyncAgent(Agent):
                                     should_stop = True
                                     success = True
                                     break
-
-                            if self.tools is not None:
-                                self.parse_and_execute_tools(response)
+                            try:
+                                if self.tools is not None:
+                                    self.parse_and_execute_tools(response)
+                            except Exception as e:
+                                logger.error(
+                                    f"Error executing tools: {e}"
+                                )
 
                         # Add the response to the memory
                         self.short_memory.add(
